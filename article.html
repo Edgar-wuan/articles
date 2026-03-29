@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="logo.png">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="article-nav">
+        <a href="index.html" class="back-btn">← 返回文集</a>
+    </nav>
+
+    <!-- 文章内容 -->
+    <main class="article-detail">
+        <div class="article-header">
+            <span id="article-cate" class="cate-tag"></span>
+            <h1 id="article-title"></h1>
+            <p id="article-date" class="date"></p>
+        </div>
+
+        <div id="article-image" class="article-img"></div>
+        <div id="article-content" class="article-content"></div>
+    </main>
+
+    <footer>
+        <a href="https://edgar-wuan.github.io/">
+            <p>© 2026 勿安的个人网站 | 文集</p>
+        </a>
+    </footer>
+
+    <script>
+        // 获取文章参数
+        const params = new URLSearchParams(window.location.search);
+        const filename = params.get('file');
+
+        if (!filename) {
+            document.body.innerHTML = '<p class="empty">未找到文章</p>';
+        }
+
+        // 加载文章内容
+        loadArticle();
+
+        async function loadArticle() {
+            const { cate, title, date, name } = parseArticleInfo(filename);
+            
+            // 填充标题信息
+            document.getElementById('article-title').textContent = title;
+            document.getElementById('article-cate').textContent = cate;
+            document.getElementById('article-date').textContent = formatDate(date);
+            document.title = title;
+
+            // 加载配图
+            const imgEl = document.getElementById('article-image');
+            imgEl.innerHTML = `<img src="images/${name}.jpg" alt="${title}" onerror="this.style.display='none'">`;
+
+            // 加载正文
+            const res = await fetch(`articles/${filename}`);
+            const text = await res.text();
+            document.getElementById('article-content').innerHTML = text.replace(/\n/g, '<br><br>');
+        }
+
+        // 解析文件名
+        function parseArticleInfo(filename) {
+            const name = filename.replace('.txt', '');
+            const [cate, title, date] = name.split('_');
+            return { filename, cate, title, date, name };
+        }
+
+        function formatDate(str) {
+            return str.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+        }
+    </script>
+</body>
+</html>

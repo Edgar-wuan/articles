@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勿安的文集</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="logo.png">
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="blog-header">
+        <h1>勿安的文集</h1>
+        <p>平畴交远风 良苗亦怀新</p>
+    </header>
+
+    <!-- 分类筛选 -->
+    <div class="category-bar">
+        <button class="cate-btn active" data-cate="all">全部</button>
+    </div>
+
+    <!-- 文章列表 -->
+    <main class="article-list-container">
+        <div id="article-list" class="article-list"></div>
+    </main>
+
+    <footer>
+        <a href="https://edgar-wuan.github.io/">
+            <p>© 2026 勿安的个人网站 | 文集</p>
+        </a>
+    </footer>
+
+    <script>
+        // 自动读取articles文件夹文章
+        document.addEventListener('DOMContentLoaded', loadArticles);
+        let allArticles = [];
+
+        async function loadArticles() {
+            const articleListEl = document.getElementById('article-list');
+            const cateBar = document.querySelector('.category-bar');
+            articleListEl.innerHTML = '<p class="loading">正在加载文字...</p>';
+
+            try {
+                // 读取文章清单（纯前端自动遍历方案）
+                const res = await fetch('articles/article-list.txt');
+                const filenames = (await res.text()).split('\n').filter(name => name.endsWith('.txt') && name.trim());
+                
+                allArticles = filenames.map(file => parseArticleInfo(file));
+                // 新增：按时间降序排序（最新在前）
+                allArticles.sort((a, b) => b.date - a.date);
+                renderArticles(allArticles);
+                renderCategories(allArticles);
+            } catch (e) {
+                articleListEl.innerHTML = '<p class="empty">暂无文章 快去催更～~</p>';
+            }
+        }
+
+        // 解析文件名：分类_标题_日期.txt
+        function parseArticleInfo(filename) {
+            const name = filename.replace('.txt', '');
+            const [cate, title, date] = name.split('_');
+            return { filename, cate, title, date, name };
+        }
+
+        // 渲染文章列表
+        function renderArticles(articles) {
+            const list = document.getElementById('article-list');
+            if (articles.length === 0) {
+                list.innerHTML = '<p class="empty">暂无该分类文章</p>';
+                return;
+            }
+
+            list.innerHTML = articles.map(art => `
+                <div class="article-card">
+                    <div class="card-info">
+                        <span class="cate-tag">${art.cate}</span>
+                        <h3><a href="article.html?file=${art.filename}">${art.title}</a></h3>
+                        <p class="date">${formatDate(art.date)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 渲染分类按钮
+        function renderCategories(articles) {
+            const cates = [...new Set(articles.map(a => a.cate))];
+            const container = document.querySelector('.category-bar');
+            cates.forEach(cate => {
+                const btn = document.createElement('button');
+                btn.className = 'cate-btn';
+                btn.dataset.cate = cate;
+                btn.textContent = cate;
+                container.appendChild(btn);
+            });
+
+            // 分类筛选
+            document.querySelectorAll('.cate-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelector('.cate-btn.active').classList.remove('active');
+                    btn.classList.add('active');
+                    const cate = btn.dataset.cate;
+                    const filter = cate === 'all' ? allArticles : allArticles.filter(a => a.cate === cate);
+                    renderArticles(filter);
+                });
+            });
+        }
+
+        // 日期格式化
+        function formatDate(str) {
+            return str.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+        }
+    </script>
+</body>
+</html>
